@@ -1,16 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from faker import Faker
-import random
 import json
 import os
-import datetime
-from crearBD import Base, Resellers, Company, Company_Usage
+from crearBD import Base, Organizations, Companies
 
-# Inicializar Faker
-fake = Faker()
-
-# Función para generar datos desde un JSON
 def insert_data_from_json(session, json_file_path):
     try:
         with open(json_file_path, 'r') as file:
@@ -18,46 +11,44 @@ def insert_data_from_json(session, json_file_path):
         
         print(f"Datos cargados desde {json_file_path}")
         
-        # Insertar datos en la tabla Resellers
-        for reseller in data['resellers']:
-            reseller_entry = Resellers(
-                reseller_uid=reseller['reseller_uid'],
-                reseller_name=reseller['reseller_name'],
-                circuit_code=str(random.randint(1000, 9999)),  # Código aleatorio
-                company_uid=random.randint(1, 100)  # ID aleatorio
-            )
-            session.add(reseller_entry)
+        # Diccionario para rastrear las organizaciones ya insertadas (para evitar duplicados)
+        inserted_organizations = {}
         
-        session.flush()  # Asegurarse de que los resellers se guardan antes de añadir companies
-        print(f"Resellers insertados: {len(data['resellers'])}")
+        # Primero, extraer las organizaciones únicas de los datos del JSON
+        # En el JSON las organizaciones son llamadas "resellers"
+        for reseller in data['resellers']:
+            org_uid = reseller['reseller_uid']
+            if org_uid not in inserted_organizations:
+                org_entry = Organizations(
+                    organization_uid=org_uid,
+                    organization_name=reseller['reseller_name'],
+                    tax_id=reseller['tax_id'],
+                    company_id=str(reseller.get('company_uid', ''))  # Opcional, usar cadena vacía si no existe
+                )
+                session.add(org_entry)
+                inserted_organizations[org_uid] = org_entry
+                
+        session.flush()  # Asegurarse de que las organizaciones se guardan antes de añadir compañías
+        print(f"Organizaciones insertadas: {len(inserted_organizations)}")
 
         # Insertar datos en la tabla Companies
+        companies_count = 0
         for company in data['companies']:
-            company_entry = Company(
-                reseller_uid=company['reseller_uid'],
-                company_uid=company['company_uid'],
-                company_name=company['company_name']
-            )
-            session.add(company_entry)
-        
-        session.flush()  # Asegurarse de que las companies se guardan antes de añadir usages
-        print(f"Companies insertadas: {len(data['companies'])}")
-
-        # Insertar datos en la tabla Company_Usage
-        for company in data['companies']:
-            # Generamos varios registros de uso por compañía
-            for _ in range(3):  # 3 registros de uso por compañía
-                usage_entry = Company_Usage(
-                    company_uid=company['company_uid'],
-                    product_type=random.choice(["VBR", "VBO365", "Kasten"]),
-                    license_type=random.choice(["Perpetual", "Subscription", "Community"]),
-                    usage=company.get('metric_usage', random.randint(1, 1000)),
-                    date=datetime.date(2024, random.randint(1, 12), random.randint(1, 28))
+            # Verificar que la organización (reseller) existe
+            if company['reseller_uid'] in inserted_organizations:
+                company_entry = Companies(
+                    company_uid=str(company['company_uid']),  # Convertir a string según la definición de la tabla
+                    company_name=company['company_name'],
+                    organization_uid=company['reseller_uid']
                 )
-                session.add(usage_entry)
+                session.add(company_entry)
+                companies_count += 1
+            else:
+                print(f"Advertencia: Organización con UID {company['reseller_uid']} no encontrada para la compañía {company['company_name']}")
         
         # Hacer commit de todos los cambios
         session.commit()
+        print(f"Compañías insertadas: {companies_count}")
         print("Datos insertados correctamente en la base de datos")
         
     except Exception as e:
@@ -67,23 +58,17 @@ def insert_data_from_json(session, json_file_path):
 
 def query_data(session):
     try:
-        # Consultar todos los resellers
-        resellers = session.query(Resellers).all()
-        print(f"\nResellers encontrados: {len(resellers)}")
-        for reseller in resellers[:3]:  # Mostrar solo los primeros 3 para no saturar
-            print(f"  - {reseller.reseller_name} (ID: {reseller.reseller_uid})")
+        # Consultar todas las organizaciones
+        organizations = session.query(Organizations).all()
+        print(f"\nOrganizaciones encontradas: {len(organizations)}")
+        for org in organizations:
+            print(f"  - {org.organization_name} (UID: {org.organization_uid}, Tax ID: {org.tax_id})")
 
-        # Consultar todas las companies
-        companies = session.query(Company).all()
-        print(f"\nCompanies encontradas: {len(companies)}")
-        for company in companies[:3]:  # Mostrar solo las primeras 3
-            print(f"  - {company.company_name} (ID: {company.company_uid}, Reseller: {company.reseller_uid})")
-
-        # Consultar todos los company usages
-        usages = session.query(Company_Usage).all()
-        print(f"\nUsages encontrados: {len(usages)}")
-        for usage in usages[:3]:  # Mostrar solo los primeros 3
-            print(f"  - Company ID: {usage.company_uid}, Product: {usage.product_type}, Usage: {usage.usage}")
+        # Consultar todas las compañías
+        companies = session.query(Companies).all()
+        print(f"\nCompañías encontradas: {len(companies)}")
+        for company in companies:
+            print(f"  - {company.company_name} (UID: {company.company_uid}, Org UID: {company.organization_uid})")
     
     except Exception as e:
         print(f"Error al consultar datos: {str(e)}")
