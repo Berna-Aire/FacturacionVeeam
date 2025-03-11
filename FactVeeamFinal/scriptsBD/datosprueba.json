@@ -1,0 +1,44 @@
+{
+  "resellers": [
+    {
+      "metric": "Reseller1",
+      "metric_usage": 0,
+      "reseller_uid": "11111111111",
+      "reseller_name": "AGUAS DE ALICANTE",
+      "tax_id": "55555"
+    },
+    {
+      "metric": "Reseller2",
+      "metric_usage": 0,
+      "reseller_uid": "22222222222",
+      "reseller_name": "AGUAS DE ALICANTE 2",
+      "tax_id": "66666"
+    }
+  ],
+  "companies": [
+    {
+      "metric": "Companya1",
+      "metric_usage": 1,
+      "company_uid": 1234,
+      "company_name": "aguasAlcoy",
+      "reseller_uid": "11111111111",
+      "reseller_name": "AGUAS DE ALICANTE"
+    },
+    {
+      "metric": "Companya2",
+      "metric_usage": 2,
+      "company_uid": 5678,
+      "company_name": "aguasAlcoy 2",
+      "reseller_uid": "11111111111",
+      "reseller_name": "AGUAS DE ALICANTE"
+    },
+    {
+      "metric": "Companya3",
+      "metric_usage": 1,
+      "company_uid": 91011,
+      "company_name": "aguasAlcoy 3",
+      "reseller_uid": "22222222222",
+      "reseller_name": "AGUAS DE ALICANTE 2"
+    }
+  ]
+}

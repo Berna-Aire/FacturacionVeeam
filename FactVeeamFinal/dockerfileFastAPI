@@ -1,0 +1,37 @@
+# Usa Python sobre Alpine como base
+FROM python:3.8-alpine
+
+# Instalar dependencias necesarias
+RUN apk update && apk add --no-cache \
+    build-base \
+    libffi-dev \
+    mariadb-dev \
+    mysql-client \
+    bash
+
+# Establecer el directorio de trabajo
+WORKDIR /appAPI
+
+# Copiar el archivo requirements.txt y luego instalar dependencias
+COPY ./appAPI/requirements.txt /appAPI/requirements.txt
+
+# Instalar las dependencias de Python
+RUN pip install --no-cache-dir -r /appAPI/requirements.txt
+
+# Copiar el código de la aplicación FastAPI
+COPY ./appAPI/main.py /appAPI/main.py
+
+# Copiar los archivos del directorio scripts
+COPY ./scriptsAPI /appAPI/scriptsAPI
+
+# Establecer permisos para el cronjob
+RUN if [ -f /appAPI/scriptsAPI/cronjob.sh ]; then chmod +x /appAPI/scriptsAPI/cronjob.sh; fi
+
+# Copiar script de espera para la base de datos
+COPY ./wait-for-db.sh /wait-for-db.sh
+RUN chmod +x /wait-for-db.sh
+
+# Exponer el puerto en el que FastAPI va a correr
+EXPOSE 8001
+
+# El comando se define en docker-compose.yaml

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: dockerfileBD
+    image: mariadb:latest
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: factveeam
+      MYSQL_DATABASE: factveeam
+      MYSQL_USER: veeam_user
+      MYSQL_PASSWORD: veeam_password
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfactveeam"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: dockerfileFastAPI
+    image: fastapi:latest
+    container_name: fastapi
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: 'mysql+pymysql://veeam_user:veeam_password@db/factveeam'
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
+
+volumes:
+  db_data:

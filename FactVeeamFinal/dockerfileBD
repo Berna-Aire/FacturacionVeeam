@@ -1,0 +1,42 @@
+# Use the official MariaDB image with Alpine
+FROM mariadb:10.6
+
+# Set environment variables for MariaDB
+ENV MYSQL_ROOT_PASSWORD=factveeam
+ENV MYSQL_DATABASE=factveeam
+ENV MYSQL_USER=veeam_user
+ENV MYSQL_PASSWORD=veeam_password
+
+# Permitir conexiones externas
+RUN echo "[mysqld]\nbind-address = 0.0.0.0\nmax_connections = 1000\nwait_timeout = 600\ninteractive_timeout = 600\nconnect_timeout = 20" > /etc/mysql/my.cnf
+
+# Crear directorio para scripts
+RUN mkdir -p /scriptsBD
+
+# Copiar el archivo SQL para otorgar permisos a todos los usuarios
+COPY ./scriptsBD/init.sql /docker-entrypoint-initdb.d/
+
+# Copiar los scripts Python
+COPY ./scriptsBD/requirements.txt /scriptsBD/requirements.txt
+COPY ./scriptsBD/crearBD.py /scriptsBD/crearBD.py
+COPY ./scriptsBD/datosprueba.json /scriptsBD/datosprueba.json
+COPY ./scriptsBD/insertardatosBD.py /scriptsBD/insertardatosBD.py
+
+# Install Python and required packages
+RUN apt-get update && apt-get install -y python3.9 python3-pip && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# Instalar dependencias desde el archivo requirements.txt
+RUN pip3 install --no-cache-dir -r /scriptsBD/requirements.txt
+RUN pip3 install faker
+
+# Cambiar permisos de los scripts Python
+RUN chmod 755 /scriptsBD/crearBD.py
+RUN chmod 755 /scriptsBD/insertardatosBD.py
+
+# Agregar script de inicialización para ejecutar los scripts Python después de que MariaDB está listo
+COPY ./scriptsBD/setup-db.sh /docker-entrypoint-initdb.d/setup-db.sh
+RUN chmod +x /docker-entrypoint-initdb.d/setup-db.sh
+
+EXPOSE 3306
