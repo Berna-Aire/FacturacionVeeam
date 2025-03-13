@@ -37,7 +37,7 @@ Este repositorio contiene un sistema dockerizado para la gestión de datos de Ve
 1. Clona este repositorio:
    ```bash
    git clone https://github.com/Berna-Aire/FacturacionVeeam.git
-   cd FacturacionVeeam/FactVeeamFinal
+   cd FactVeeamFinal
    ```
 
 2. Construye e inicia los contenedores:
