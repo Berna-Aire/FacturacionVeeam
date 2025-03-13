@@ -31,6 +31,7 @@ Este repositorio contiene un sistema dockerizado para la gestión de datos de Ve
 
 - Docker
 - Docker Compose
+- Git
 
 ## 🔧 Instalación y ejecución
 
