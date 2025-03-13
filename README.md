@@ -45,15 +45,15 @@ Este repositorio contiene un sistema dockerizado para la gestión de datos de Ve
    docker-compose build
    docker-compose up -d
    ```
-⚠️ En caso de encontrar el error
-  ```bash
-   ERROR: for fastapi  Container "<id_container>" is unhealthy.
-   ERROR: Encountered errors while bringing up the project.
-   ```
-Volver a levantar los contenedores 
-```bash
-   docker-compose up -d
-   ```
+   ⚠️ En caso de encontrar el error
+     ```bash
+      ERROR: for fastapi  Container "<id_container>" is unhealthy.
+      ERROR: Encountered errors while bringing up the project.
+      ```
+   Volver a levantar los contenedores 
+   ```bash
+      docker-compose up -d
+      ```
 
 3. Verifica que los contenedores estén funcionando:
    ```bash
