@@ -15,41 +15,42 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Define your database models (tables)
-class Resellers(Base):
-    __tablename__ = 'resellers'
+# Define your database models (tables) based on the new structure
+class Organizations(Base):
+    __tablename__ = 'organizations'
 
-    reseller_uid = Column(String(50), primary_key=True, nullable=False)
-    reseller_name = Column(String(100), nullable=False)
-    circuit_code = Column(String(50))
-    company_uid = Column(Integer)
+    organization_uid = Column(String(50), primary_key=True)
+    organization_name = Column(String(100))
+    tax_id = Column(String(50))
+    company_id = Column(String(50))
     
-    # Relación con Company
-    companies = relationship("Company", back_populates="reseller")
+    # Relación con Companies
+    companies = relationship("Companies", back_populates="organization")
 
-class Company(Base):
+class Companies(Base):
     __tablename__ = 'companies'
     
-    reseller_uid = Column(String(50), ForeignKey("resellers.reseller_uid"), primary_key=True, nullable=False)
-    company_uid = Column(Integer, primary_key=True, nullable=False)
+    company_uid = Column(String(50), primary_key=True)
     company_name = Column(String(100), nullable=False)
+    organization_uid = Column(String(50), ForeignKey("organizations.organization_uid"), nullable=False)
     
     # Relaciones
-    reseller = relationship("Resellers", back_populates="companies")
-    usages = relationship("Company_Usage", back_populates="company")
-    
-class Company_Usage(Base):
-    __tablename__ = 'company_usage'
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    company_uid = Column(Integer, ForeignKey("companies.company_uid"), nullable=False)
-    product_type = Column(String(50), nullable=False)
-    license_type = Column(String(50), nullable=False)
-    usage = Column(Integer, nullable=False)
-    date = Column(Date, nullable=False)
-    
-    # Relación con Company
-    company = relationship("Company", back_populates="usages")
+    organization = relationship("Organizations", back_populates="companies")
+    # Uncomment if you add the Company_Usage class back
+    # usages = relationship("Company_Usage", back_populates="company")
+
+# Uncomment if you need the Company_Usage table
+# class Company_Usage(Base):
+#     __tablename__ = 'company_usage'
+#     
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     company_uid = Column(String(50), ForeignKey("companies.company_uid"), nullable=False)
+#     metric = Column(String(50), nullable=False)
+#     metric_usage = Column(Integer, nullable=False)
+#     collect_date = Column(Date, nullable=False)
+#     
+#     # Relación con Companies
+#     company = relationship("Companies", back_populates="usages")
 
 # Dependency to get the database session
 def get_db():
@@ -63,32 +64,35 @@ def get_db():
 def read_root():
     return {"message": "Veeam API - Bienvenido"}
 
-# Endpoints para Resellers
-@app.get("/resellers/")
-def read_resellers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    resellers = db.query(Resellers).offset(skip).limit(limit).all()
-    return resellers
+# Endpoints para Organizations (antes Resellers)
+@app.get("/organizations/")
+def read_organizations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    organizations = db.query(Organizations).offset(skip).limit(limit).all()
+    return organizations
 
-@app.get("/resellers/{reseller_uid}")
-def read_reseller(reseller_uid: str, db: Session = Depends(get_db)):
-    reseller = db.query(Resellers).filter(Resellers.reseller_uid == reseller_uid).first()
-    if reseller is None:
-        raise HTTPException(status_code=404, detail="Reseller not found")
-    return reseller
+@app.get("/organizations/{organization_uid}")
+def read_organization(organization_uid: str, db: Session = Depends(get_db)):
+    organization = db.query(Organizations).filter(Organizations.organization_uid == organization_uid).first()
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return organization
 
 # Endpoints para Companies
 @app.get("/companies/")
 def read_companies(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    companies = db.query(Company).offset(skip).limit(limit).all()
+    companies = db.query(Companies).offset(skip).limit(limit).all()
     return companies
 
 @app.get("/companies/{company_uid}")
-def read_company(company_uid: int, db: Session = Depends(get_db)):
-    company = db.query(Company).filter(Company.company_uid == company_uid).first()
+def read_company(company_uid: str, db: Session = Depends(get_db)):
+    company = db.query(Companies).filter(Companies.company_uid == company_uid).first()
     if company is None:
         raise HTTPException(status_code=404, detail="Company not found")
     return company
 
+# Comentado porque la tabla Company_Usage está comentada en el modelo
+# Si decides usar Company_Usage, descomenta estos endpoints
+"""
 # Endpoints para Company_Usage
 @app.get("/usages/")
 def read_usages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -96,8 +100,9 @@ def read_usages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return usages
 
 @app.get("/companies/{company_uid}/usages")
-def read_company_usages(company_uid: int, db: Session = Depends(get_db)):
+def read_company_usages(company_uid: str, db: Session = Depends(get_db)):
     usages = db.query(Company_Usage).filter(Company_Usage.company_uid == company_uid).all()
     if not usages:
         raise HTTPException(status_code=404, detail="No usages found for this company")
     return usages
+"""
